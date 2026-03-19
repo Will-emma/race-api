@@ -29,4 +29,28 @@ public class RunnerService {
                 )
         );
     }
+
+    public Runner create(Runner runner) {
+        return runnerRepository.save(runner);
+    }
+
+    public Runner update(Runner runner) {
+        if (runner.getId() == null || !runnerRepository.existsById(runner.getId())) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    String.format("Runner %s not found", runner.getId())
+            );
+        }
+        return runnerRepository.save(runner);
+    }
+
+    public void delete(Long id) {
+        if (!runnerRepository.existsById(id)) {
+            throw new ResponseStatusException(
+                    HttpStatus.NOT_FOUND,
+                    String.format("Runner %s not found", id)
+            );
+        }
+        runnerRepository.deleteById(id);
+    }
 }
