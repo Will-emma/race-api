@@ -25,12 +25,14 @@ public class RunnerService {
         return runnerRepository.findById(id).orElseThrow(() ->
                 new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
-                        String.format("Runner %s not found", id)
+                        String.format("Coureur %s introuvable", id)
                 )
         );
     }
 
     public Runner create(Runner runner) {
+        // On valide l'email avant toute sauvegarde pour respecter la règle métier du sujet.
+        validateEmail(runner);
         return runnerRepository.save(runner);
     }
 
@@ -38,9 +40,12 @@ public class RunnerService {
         if (runner.getId() == null || !runnerRepository.existsById(runner.getId())) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    String.format("Runner %s not found", runner.getId())
+                    String.format("Coureur %s introuvable", runner.getId())
             );
         }
+
+        // On applique la même validation en modification pour éviter d'enregistrer un email invalide.
+        validateEmail(runner);
         return runnerRepository.save(runner);
     }
 
@@ -48,9 +53,18 @@ public class RunnerService {
         if (!runnerRepository.existsById(id)) {
             throw new ResponseStatusException(
                     HttpStatus.NOT_FOUND,
-                    String.format("Runner %s not found", id)
+                    String.format("Coureur %s introuvable", id)
             );
         }
         runnerRepository.deleteById(id);
+    }
+
+    private void validateEmail(Runner runner) {
+        if (runner.getEmail() == null || !runner.getEmail().contains("@")) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "L'email du coureur doit contenir @"
+            );
+        }
     }
 }

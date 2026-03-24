@@ -8,8 +8,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -28,8 +30,9 @@ public class RaceController {
     }
 
     @GetMapping
-    public List<Race> getAll() {
-        return raceService.getAll();
+    public List<Race> getAll(@RequestParam(required = false) String location) {
+        // Le paramètre location reste optionnel: sans lui, on renvoie toutes les courses.
+        return raceService.getAll(location);
     }
 
     @GetMapping("/{id}")
@@ -38,8 +41,17 @@ public class RaceController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public Race create(@RequestBody Race race) {
         return raceService.create(race);
+    }
+
+    @PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public Race update(@PathVariable Long id, @RequestBody Race race) {
+        // On recopie l'id de l'URL dans l'objet pour cibler exactement la course a modifier.
+        race.setId(id);
+        return raceService.update(race);
     }
 
     @GetMapping("/{raceId}/participants/count")
@@ -51,6 +63,12 @@ public class RaceController {
     @ResponseStatus(HttpStatus.CREATED)
     public void registerRunner(@PathVariable Long raceId, @RequestBody CreateRegistrationRequest request) {
         registrationService.register(raceId, request.runnerId());
+    }
+
+    @GetMapping("/{raceId}/registrations")
+    public List<com.takima.race.runner.entities.Runner> getParticipants(@PathVariable Long raceId) {
+        // Cet endpoint renvoie les coureurs inscrits à une course donnée.
+        return raceService.getParticipants(raceId);
     }
 
 }

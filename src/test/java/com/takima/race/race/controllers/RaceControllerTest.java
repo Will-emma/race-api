@@ -4,6 +4,7 @@ import com.takima.race.race.entities.Race;
 import com.takima.race.registration.entities.Registration;
 import com.takima.race.race.services.RaceService;
 import com.takima.race.registration.services.RegistrationService;
+import com.takima.race.runner.entities.Runner;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.web.servlet.MockMvc;
@@ -16,9 +17,11 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -40,7 +43,7 @@ class RaceControllerTest {
         race.setLocation("Paris");
         race.setMaxParticipants(500);
 
-        when(raceService.getAll()).thenReturn(List.of(race));
+        when(raceService.getAll(null)).thenReturn(List.of(race));
 
         mockMvc.perform(get("/races"))
                 .andExpect(status().isOk())
@@ -50,6 +53,28 @@ class RaceControllerTest {
                 .andExpect(jsonPath("$[0].date").value("2026-06-01"))
                 .andExpect(jsonPath("$[0].location").value("Paris"))
                 .andExpect(jsonPath("$[0].maxParticipants").value(500));
+
+        verify(raceService).getAll(null);
+    }
+
+    @Test
+    void getAllRacesCanFilterByLocation() throws Exception {
+        when(raceService.getAll("Paris")).thenReturn(List.of());
+
+        mockMvc.perform(get("/races").param("location", "Paris"))
+                .andExpect(status().isOk());
+
+        verify(raceService).getAll("Paris");
+    }
+
+    @Test
+    void getRaceByIdReturnsNotFoundWhenRaceDoesNotExist() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Course 99 introuvable"))
+                .when(raceService)
+                .getById(99L);
+
+        mockMvc.perform(get("/races/99"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -64,7 +89,7 @@ class RaceControllerTest {
 
     @Test
     void countParticipantsReturnsNotFoundWhenRaceDoesNotExist() throws Exception {
-        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Race 99 not found"))
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Course 99 introuvable"))
                 .when(raceService)
                 .countParticipants(99L);
 
@@ -84,5 +109,70 @@ class RaceControllerTest {
                                 }
                                 """))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void getParticipantsReturnsRunnerList() throws Exception {
+        Runner runner = new Runner();
+        runner.setId(7L);
+        runner.setFirstName("Alice");
+        runner.setLastName("Martin");
+        runner.setEmail("alice@example.com");
+        runner.setAge(30);
+
+        when(raceService.getParticipants(1L)).thenReturn(List.of(runner));
+
+        mockMvc.perform(get("/races/1/registrations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(7))
+                .andExpect(jsonPath("$[0].firstName").value("Alice"))
+                .andExpect(jsonPath("$[0].lastName").value("Martin"))
+                .andExpect(jsonPath("$[0].email").value("alice@example.com"))
+                .andExpect(jsonPath("$[0].age").value(30));
+    }
+
+    @Test
+    void updateRaceReturnsCreated() throws Exception {
+        Race race = new Race();
+        race.setId(1L);
+        race.setName("Marathon de Lyon");
+        race.setDate(LocalDate.of(2026, 9, 20));
+        race.setLocation("Lyon");
+        race.setMaxParticipants(800);
+
+        when(raceService.update(org.mockito.ArgumentMatchers.any(Race.class))).thenReturn(race);
+
+        mockMvc.perform(put("/races/1")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "name": "Marathon de Lyon",
+                                  "date": "2026-09-20",
+                                  "location": "Lyon",
+                                  "maxParticipants": 800
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Marathon de Lyon"))
+                .andExpect(jsonPath("$.location").value("Lyon"));
+    }
+
+    @Test
+    void updateRaceReturnsNotFoundWhenRaceDoesNotExist() throws Exception {
+        doThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Course 99 introuvable"))
+                .when(raceService)
+                .update(org.mockito.ArgumentMatchers.any(Race.class));
+
+        mockMvc.perform(put("/races/99")
+                        .contentType("application/json")
+                        .content("""
+                                {
+                                  "name": "Marathon de Lyon",
+                                  "date": "2026-09-20",
+                                  "location": "Lyon",
+                                  "maxParticipants": 800
+                                }
+                                """))
+                .andExpect(status().isNotFound());
     }
 }

@@ -1,96 +1,35 @@
-# TP — Création d'une API REST : Gestion d'inscriptions à une course
+# TP - Creation d'une API REST : Gestion d'inscriptions a une course
 
 ## Objectif
 
-L'objectif de ce TP est de concevoir et développer une **API REST** permettant de gérer l'inscription de coureurs à différentes courses.
+Ce projet a pour objectif de developper une API REST permettant de gerer :
 
-Cette API devra permettre :
+- les coureurs
+- les courses
+- les inscriptions a une course
 
-* de gérer les **coureurs**
-* de gérer les **courses**
-* de gérer les **inscriptions à une course**
+Les donnees sont persistees dans une base de donnees PostgreSQL.
 
-Les données devront être **persistées dans une base de données PostgreSQL**.
+## Stack technique
 
----
+- Java 25
+- Spring Boot 4
+- Spring Web
+- Spring Data JPA
+- Flyway
+- PostgreSQL
+- Docker
+- Adminer
 
-# Contexte
+## Lancer le projet
 
-Une organisation sportive souhaite mettre en place une plateforme permettant de gérer les inscriptions à différentes courses.
-
-Chaque **coureur** peut s'inscrire à **plusieurs courses**, et chaque **course** peut accueillir **plusieurs coureurs**.
-
-Votre mission est de développer l'API qui permettra de gérer ces informations.
-
----
-
-# Stack technique
-
-Pour ce TP, vous utiliserez les technologies suivantes :
-
-* **Java 25**
-* **Spring Boot 4**
-* **Spring Web**
-* **Spring Data JPA**
-* **Flyway**
-
-
-* **Docker**
-* **PostgreSQL**
-* **Adminer**
-
----
-
-# Fork le projet
-
-Avant de commencer le TP, forkez le projet pour avoir votre propre repo associé au TP :
-![fork.png](fork.png)
-
-Clonez ensuite le projet **depuis votre repo**
-
----
-
-# Lancer le projet
-
-## 1 — Démarrer la base de données
-
-Pour lancer votre base de données SQL et Adminer :
+### 1. Demarrer la base de donnees
 
 ```bash
 docker compose up -d
 ```
 
-(vous devez avoir lancé Docker Desktop au préalable si vous êtes sur Windows)
-
----
-
-## 2 — Accéder à Adminer
-
-Adminer permet de visualiser la base de données.
-
-URL :
-
-```
-http://localhost:8081
-```
-
-Paramètres de connexion :
-
-| Champ    | Valeur        |
-| -------- |---------------|
-| System   | PostgreSQL    |
-| Server   | race_postgres |
-| Username | race          |
-| Password | race          |
-| Database | race_db       |
-
----
-
-## 3 — Lancer l'application
-
-Lancer votre configuration directement sur IntelliJ.
-
-Sinon, depuis votre IDE ou en ligne de commande :
+### 2. Lancer l'application
 
 ```bash
 mvn spring-boot:run
@@ -98,94 +37,75 @@ mvn spring-boot:run
 
 L'API sera disponible sur :
 
-```
+```txt
 http://localhost:8080
 ```
 
----
+### 3. Acceder a Adminer
 
-# Modèle de données
+URL :
 
-L'application repose sur trois entités principales.
-
-## Runner (Coureur)
-
-| Champ     | Type    | Description        |
-| --------- | ------- | ------------------ |
-| id        | Long    | identifiant unique |
-| firstName | String  | prénom             |
-| lastName  | String  | nom                |
-| email     | String  | email              |
-| age       | Integer | âge                |
-
----
-
-## Race (Course)
-
-| Champ           | Type    | Description                    |
-| --------------- | ------- | ------------------------------ |
-| id              | Long    | identifiant                    |
-| name            | String  | nom de la course               |
-| date            | Date    | date de la course              |
-| location        | String  | lieu                           |
-| maxParticipants | Integer | nombre maximum de participants |
-
----
-
-## Registration (Inscription)
-
-| Champ            | Type | Description              |
-| ---------------- | ---- | ------------------------ |
-| id               | Long | identifiant              |
-| runnerId         | Long | identifiant du coureur   |
-| raceId           | Long | identifiant de la course |
-| registrationDate | Date | date d'inscription       |
-
----
-
-# API à implémenter
-
-## Gestion des coureurs
-
-### Lister les coureurs
-
-```
-GET /runners
+```txt
+http://localhost:8081
 ```
 
----
+Parametres de connexion :
 
-### Récupérer un coureur
+- Systeme : `PostgreSQL`
+- Serveur : `race_postgres`
+- Utilisateur : `race`
+- Mot de passe : `race`
+- Base de donnees : `race_db`
 
-```
-GET /runners/{id}
-```
+## Endpoints implementes
 
-Si le coureur n'existe pas :
+### Gestion des coureurs
 
-```
-404 Not Found
-```
+- `GET /runners` : lister tous les coureurs
+- `GET /runners/{id}` : recuperer un coureur par son identifiant
+- `POST /runners` : creer un coureur
+- `PUT /runners/{id}` : modifier un coureur existant
+- `DELETE /runners/{id}` : supprimer un coureur
+- `GET /runners/{runnerId}/races` : lister les courses auxquelles un coureur est inscrit
 
----
+### Gestion des courses
 
-### Supprimer un coureur
+- `GET /races` : lister toutes les courses
+- `GET /races?location=Paris` : filtrer les courses par lieu
+- `GET /races/{id}` : recuperer une course par son identifiant
+- `POST /races` : creer une course
+- `PUT /races/{id}` : modifier une course existante
+- `GET /races/{raceId}/participants/count` : compter le nombre de participants d'une course
+- `GET /races/{raceId}/registrations` : lister les participants d'une course
 
-```
-DELETE /runners/{id}
-```
+### Gestion des inscriptions
 
----
+- `POST /races/{raceId}/registrations` : inscrire un coureur a une course
 
-### Créer un coureur
+## Regles metier implementees
 
-```
+- un coureur inexistant renvoie `404 Not Found`
+- une course inexistante renvoie `404 Not Found`
+- un email invalide pour un coureur renvoie `400 Bad Request`
+- un coureur ne peut pas etre inscrit deux fois a la meme course : `409 Conflict`
+- une course complete renvoie `409 Conflict`
+
+## Codes HTTP utilises
+
+- `200 OK`
+- `201 Created`
+- `400 Bad Request`
+- `404 Not Found`
+- `409 Conflict`
+
+## Exemples de requetes
+
+### Creer un coureur
+
+```http
 POST /runners
-```
+Content-Type: application/json
 
-Body :
-
-```json
 {
   "firstName": "Alice",
   "lastName": "Martin",
@@ -194,74 +114,12 @@ Body :
 }
 ```
 
-Réponse attendue :
+### Creer une course
 
-```
-201 Created
-```
-
----
-
-### Modifier un coureur
-
-```
-PUT /runners/{id}
-```
-
-Body :
-
-```json
-{
-  "firstName": "Alice",
-  "lastName": "Martin",
-  "email": "alice.martin@example.com",
-  "age": 31
-}
-```
-
-Réponse attendue :
-
-```
-201 Created
-```
-
----
-
-Si le coureur n'existe pas :
-
-```
-404 Not Found
-```
-
----
-
-# Gestion des courses
-
-### Lister les courses
-
-```
-GET /races
-```
-
----
-
-### Récupérer une course
-
-```
-GET /races/{id}
-```
-
----
-
-### Créer une course
-
-```
+```http
 POST /races
-```
+Content-Type: application/json
 
-Body :
-
-```json
 {
   "name": "Semi-marathon de Paris",
   "date": "2026-06-01",
@@ -270,153 +128,37 @@ Body :
 }
 ```
 
----
+### Modifier une course
 
-### Compter le nombre de participants d'une course
+```http
+PUT /races/1
+Content-Type: application/json
 
-GET /races/{raceId}/participants/count
-
-Réponse :
-
-```json
 {
-  "count": 42
+  "name": "Marathon de Lyon",
+  "date": "2026-09-20",
+  "location": "Lyon",
+  "maxParticipants": 800
 }
 ```
 
-Si la course n'existe pas :
+### Inscrire un coureur a une course
 
-```
-404 Not Found
-```
+```http
+POST /races/1/registrations
+Content-Type: application/json
 
----
-
-# Gestion des inscriptions
-
-### Inscrire un coureur à une course
-
-```
-POST /races/{raceId}/registrations
-```
-
-Body :
-
-```json
 {
   "runnerId": 1
 }
 ```
 
-Réponse :
+## Tests
 
-```
-201 Created
-```
+Pour lancer les tests :
 
----
-
-### Lister les participants d'une course
-
-```
-GET /races/{raceId}/registrations
+```bash
+./mvnw.cmd test
 ```
 
----
-
-### Lister les courses d'un coureur
-
-```
-GET /runners/{runnerId}/races
-```
-
----
-
-# Règles métier
-
-Votre API doit respecter les règles suivantes :
-
-### Un coureur ne peut pas être inscrit deux fois à la même course
-
-Si cela arrive :
-
-```
-409 Conflict
-```
-
----
-
-### Les coureurs doivent avoir une adresse mail correcte
-
-Si un **mail** ne continent pas de @ :
-
-```
-400 Bad Request
-```
-
----
-
-### Une course ne peut pas dépasser son nombre maximum de participants
-
-Si la course est complète :
-
-```
-409 Conflict
-```
-
----
-
-### Les ressources doivent exister
-
-Si un **runner** ou une **race** n'existe pas :
-
-```
-404 Not Found
-```
-
----
-
-# Codes HTTP attendus
-
-| Code | Signification         |
-| ---- | --------------------- |
-| 200  | Succès                |
-| 201  | Ressource créée       |
-| 400  | Requête invalide      |
-| 404  | Ressource non trouvée |
-| 409  | Conflit               |
-
----
-
-# Conseils
-
-* Implémentez l'API **progressivement**
-* Testez vos endpoints avec Postman
-* Vérifiez les données directement dans **Adminer**
-
----
-
-# Bonus (optionnel)
-
-Si vous avez terminé le TP, vous pouvez ajouter un filtre 
-sur le location pour le endpoint de récupération des courses
-
-## Filtrage
-
-```
-GET /races?location=Paris
-```
-
----
-
-# Livrables
-
-Vous devez rendre :
-
-* le **code source**
-* un **README expliquant comment lancer le projet**
-* les **endpoints implémentés**
-
----
-
-Bon développement !
+Tous les tests passent actuellement.
